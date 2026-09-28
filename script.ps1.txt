@@ -1,0 +1,27 @@
+# Import the active corporate database file
+$Users = Import-Csv -Path "C:\lab-users.csv"
+
+foreach ($User in $Users) {
+    # Generate automated username convention (First Initial + Last Name)
+    $Username = ($User.FirstName.Substring(0,1) +$User.LastName).ToLower()
+
+    # Define target department folder destination
+    $TargetOU = "OU=$($User.Department),DC=huntsvilledefense,DC=local"
+
+    # Set uniform secure temporary password requiring change at logon
+    $SecurePassword = ConvertTo-SecureString "HuntsvilleTemp2026!" -AsPlainText -Force
+
+    # Execute account creation command pipeline
+    New-ADUser -Name "$($User.FirstName) $($User.LastName)" `
+        -SamAccountName $Username `
+        -UserPrincipalName "$Username@huntsvilledefense.local" `
+        -GivenName $User.FirstName `
+        -Surname $User.LastName `
+        -Title $User.Title `
+        -Path $TargetOU `
+        -AccountPassword $SecurePassword `
+        -ChangePasswordAtLogon $true `
+        -Enabled $true
+
+    Write-Host "Successfully onboarded corporate user: $Username into$TargetOU" -ForegroundColor Green
+}
